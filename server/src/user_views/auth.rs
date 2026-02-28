@@ -1,34 +1,14 @@
 use std::collections::HashMap;
-
+use argon2::{Algorithm, Argon2, Params, PasswordVerifier, Version};
 use crate::objects::AppState;
-use axum::http::{HeaderMap, StatusCode};
+use axum::http::{StatusCode};
 use sqlx::Row;
 use axum::{Json,extract::{State}};
 use super::payloads::Login;
 use super::response::UserToken;
 use uuid::Uuid;
-
-// auth
-pub(super) async fn auth(headers: HeaderMap, db_state: AppState) -> (bool, i64) {
-    if let Some(auth) = headers.get("authorization") {
-        let auth_str = auth.to_str().unwrap();
-        let fetch_data =
-            sqlx::query("SELECT user_id FROM auth_tokens where token=$1")
-                .bind(auth_str)
-                .fetch_optional(&db_state.db)
-                .await.unwrap();
-        let out_put = match fetch_data {
-            Some(value) => (true, value.get("user_id")),
-            None => {
-                (false, 0)
-            }
-        };
-        return out_put;
-    }
-    println!("auth failed ");
-    (false, 0)
-}
-
+use argon2::password_hash::{SaltString, PasswordHasher,PasswordHash};
+use rand::rngs::OsRng;
 
 pub(super) async fn login_user(
     State(db_state): State<AppState>,
@@ -36,14 +16,27 @@ pub(super) async fn login_user(
 )->Result<(StatusCode,Json<UserToken>),Json<HashMap<&'static str,&'static str>>>{
     // currenlty Storeing password in plain text need to fixed
     let user=
-    sqlx::query("SELECT id from users where username= $1 and password_hash=$2")
+    sqlx::query("SELECT id,password_hash from users where username= $1")
     .bind(cread.username)
-    .bind(cread.password)
     .fetch_optional(&db_state.db)
     .await.unwrap();
-    if let Some(user_id)=user{
 
-        let user_model_id:i64=user_id.get("id");
+    if let Some(user_obj)=user{
+        // matching user password
+        let uesr_password:String=user_obj.get("password_hash");
+        match verify_password(&cread.password,&uesr_password) {
+            true =>{},
+            false=>{
+                return Err(
+                    Json(HashMap::from([
+                        ("msg","no user found")
+                    ]))
+                );
+            }            
+        }
+
+
+        let user_model_id:i64=user_obj.get("id");
         // user found creating a token 
         let mut tx=db_state.db.begin().await.unwrap();
 
@@ -71,4 +64,41 @@ pub(super) async fn login_user(
         ]))
     )
 
+}
+
+fn argon2_instance() -> Argon2<'static> {
+    let params = Params::new(
+        19_456, // memory (KB)
+        2,      // iterations
+        1,      // parallelism
+        None,
+    ).unwrap();
+
+    Argon2::new(Algorithm::Argon2id, Version::V0x13, params)
+}
+
+pub fn hash_password(password: &str) -> String {
+    let salt = SaltString::generate(&mut OsRng);
+    let argon2 = argon2_instance();
+
+    argon2
+        .hash_password(password.as_bytes(), &salt)
+        .unwrap()
+        .to_string()
+}
+
+fn verify_password(
+    password: &str,
+    stored_hash: &str,
+) -> bool {
+    let argon2 = argon2_instance();
+
+    let parsed_hash = match PasswordHash::new(stored_hash) {
+        Ok(hash) => hash,
+        Err(_) => return false,
+    };
+
+    argon2
+        .verify_password(password.as_bytes(), &parsed_hash)
+        .is_ok()
 }

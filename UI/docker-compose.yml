@@ -1,0 +1,4 @@
+services:
+  project:
+    image: ferro_font
+    restart: always

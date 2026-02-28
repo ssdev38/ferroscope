@@ -5,10 +5,17 @@ use super::config_parse::{host_check,web_check};
 use reqwest::{Client};
 use tokio::time::{interval,Duration};
 use std::sync::Arc;
+use std::sync::LazyLock;
+use std::env;
+
+static BASEAPI:LazyLock<String>=LazyLock::new(||
+format!("{}/send_service",env::var("BASEAPI").unwrap_or("http://localhost:8000".to_string()))
+);
+
 
 
 pub async fn run(api_client:Arc<Client>){
-    let mut ticker=interval(Duration::from_secs(30));
+    let mut ticker=interval(Duration::from_secs(60));
     loop {
         
     tokio::join!(
@@ -41,7 +48,7 @@ async fn host_runner(api_client:Arc<Client>){
         };
         let host_status=host_check(&value).await;
         let res=api_client
-        .post("http://localhost:8000/send_service")
+        .post(BASEAPI.as_str())
         .json(&BaseFormat{service_name:value.name,status:if host_status {"up".to_string()} else {"down".to_string()},error_msg:"".to_string()})
         .send().await.unwrap()
         ;
@@ -75,14 +82,14 @@ async  fn web_runner(api_client:Arc<Client>){
         let (status,code)=web_check(&value,&_client).await;
         if status =="Success".to_string()&& value.match_status(code){
             let res=api_client
-            .post("http://localhost:8000/send_service")
+           .post(BASEAPI.as_str())
             .json(&BaseFormat{service_name:value.name,status:"up".to_string(),error_msg:"".to_string()})
             .send().await.unwrap()
             ;
             println!("the res is {:?}",res);
         }else{
             let res=api_client
-            .post("http://localhost:8000/send_service")
+           .post(BASEAPI.as_str())
             .json(&BaseFormat{service_name:value.name,status:"down".to_string(),error_msg:format!("The status code is {}",code)})
             .send().await.unwrap();
             println!("the res is {:?}",res);

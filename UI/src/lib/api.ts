@@ -12,7 +12,8 @@ import type {
 } from "@/types";
 
 // ─── Config ───────────────────────────────────────────────────────────────────
-const API_URL = "http://192.168.0.153:9000/view";
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
+const AUTH_URL = process.env.NEXT_PUBLIC_AUTH_URL;
 
 const getHeaders = () => {
   const token =
@@ -134,7 +135,7 @@ export const api = {
   async userLogin(
     credentials: LoginCredentials,
   ): Promise<LoginResponse | null> {
-    const response = await fetch(`${API_URL}/user_login`, {
+    const response = await fetch(`${AUTH_URL}/user_login`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
