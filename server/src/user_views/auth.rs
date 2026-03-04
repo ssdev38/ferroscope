@@ -3,9 +3,9 @@ use argon2::{Algorithm, Argon2, Params, PasswordVerifier, Version};
 use crate::objects::AppState;
 use axum::http::{StatusCode};
 use sqlx::Row;
-use axum::{Json,extract::{State}};
-use super::payloads::Login;
-use super::response::UserToken;
+use axum::{Json,extract::{State},Extension};
+use super::payloads::{Login,UsernamePasswordReset};
+use super::response::{UserToken,AuthUser,AuthuserIdPassword};
 use uuid::Uuid;
 use argon2::password_hash::{SaltString, PasswordHasher,PasswordHash};
 use rand::rngs::OsRng;
@@ -65,6 +65,42 @@ pub(super) async fn login_user(
     )
 
 }
+
+
+pub(super) async fn __get_user_name(
+    State(db_state): State<AppState>,
+    Extension(auth_user):Extension<AuthUser>
+)->Json<AuthuserIdPassword>{
+    let query=sqlx::query(
+        "SELECT username FROM users WHERE id=$1"
+    )
+    .bind(auth_user.user_id)
+    .fetch_one(&db_state.db).await.unwrap();
+    // returns User name and id
+    Json(AuthuserIdPassword{user_id:auth_user.user_id,username:query.get("username")})
+}
+
+
+pub(super) async fn __change_password(
+    State(db_state): State<AppState>,
+    Extension(auth_user):Extension<AuthUser>,
+    Json(cread):Json<UsernamePasswordReset>,
+)->StatusCode{
+    let query_status=sqlx::query(
+        "UPDATE users SET username=$1,password_hash=$2 WHERE id=$3"
+    )
+    .bind(cread.username)
+    .bind(hash_password(&cread.password))
+    .bind(auth_user.user_id)
+    .execute(&db_state.db).await;
+
+    match query_status {
+        Ok(_)=>return StatusCode::OK,
+        Err(_)=>return StatusCode::CONFLICT
+    }
+}
+
+
 
 fn argon2_instance() -> Argon2<'static> {
     let params = Params::new(

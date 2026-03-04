@@ -3,6 +3,9 @@ use super::objects as payload;
 use crate::objects::AppState;
 use axum::http::{HeaderMap, StatusCode};
 use axum::{Json, extract::State};
+use tokio::sync::watch;
+use crate::user_views::{LatestCpu,LatestRam};
+use chrono::{Utc};
 
 pub async fn __system_info( headers: HeaderMap,
     State(db_state): State<AppState>,
@@ -51,6 +54,7 @@ pub async fn __cpu_metrix(
     State(db_state): State<AppState>,
     data: Json<payload::CpuStats>,
 ) -> StatusCode {
+    //TODO: change cpu from f64
     println!("CPU metrix");
     let (is_auth, nodes_id) = auth(headers, db_state.clone()).await;
     if !is_auth {
@@ -63,6 +67,17 @@ pub async fn __cpu_metrix(
         .execute(&db_state.db)
         .await
         .expect("failed to insert user");
+    // putting in the stream
+    let node_key=format!("node_cpu_strem_{nodes_id}");
+    if db_state.cpu_strem.contains_key(&node_key){
+        let tx=db_state.cpu_strem.get(&node_key).unwrap();
+        let _=tx.send(LatestCpu{ value : data.cpu,date_time:Utc::now()});
+    }else{
+        let (tx,_)=watch::channel(LatestCpu{ value : data.cpu,date_time:Utc::now()});
+        db_state.cpu_strem.insert(node_key,tx);
+    };
+
+
     StatusCode::OK
 }
 
@@ -84,6 +99,17 @@ pub async fn __memory_metrix(
         .execute(&db_state.db)
         .await
         .expect("failed to insert user");
+    
+
+    let node_key=format!("node_ram_strem_{nodes_id}");
+    if db_state.ram_strem.contains_key(&node_key){
+        let tx=db_state.ram_strem.get(&node_key).unwrap();
+        let _=tx.send(LatestRam{timestamp:Utc::now(),free: data.free.clone(),total:data.total.clone()});
+    }else{
+        let (tx,_)=watch::channel(LatestRam{timestamp:Utc::now(),free: data.free.clone(),total:data.total.clone()});
+        db_state.ram_strem.insert(node_key,tx);
+    };    
+
     StatusCode::OK
 }
 
@@ -117,3 +143,21 @@ pub async fn __service_monitor(
     .expect("failed to insert user");
     StatusCode::OK
 }
+
+pub async fn __update_uptime( headers: HeaderMap,
+    State(db_state): State<AppState>,
+    data: Json<payload::UpdateUptime>)-> StatusCode 
+    {
+        let (is_auth, nodes_id) = auth(headers, db_state.clone()).await;
+        if !is_auth {
+        return StatusCode::OK;
+        // auth token didn't matched, still sending 200
+    }
+    sqlx::query(
+        "UPDATE sysinfo SET uptime=$1 WHERE node_id=$2"
+    )
+    .bind(data.uptime_sec)
+    .bind(nodes_id)
+    .execute(&db_state.db).await.expect("Unable to update Uptime");
+    StatusCode::OK
+    }
