@@ -1,5 +1,5 @@
 // receive
-use serde::{Deserialize};
+use serde::Deserialize;
 
 #[derive(Deserialize, Debug)]
 pub struct CpuStats {
@@ -19,7 +19,7 @@ pub struct ServiceMonitor {
     pub error_msg: Option<String>,
 }
 
-#[derive(Deserialize,Debug)]
+#[derive(Deserialize, Debug)]
 // same strcut being used in user view for res and db query
 pub(super) struct SysInfo {
     pub system_name: String,
@@ -27,10 +27,10 @@ pub(super) struct SysInfo {
     pub os_version: String,
     pub uptime: i64,
     pub cpu_threads: i16,
-    pub cpu_vendor:String,
+    pub cpu_vendor: String,
 }
 
 #[derive(Deserialize, Debug)]
 pub(super) struct UpdateUptime {
-   pub uptime_sec:i64
+    pub uptime_sec: i64,
 }

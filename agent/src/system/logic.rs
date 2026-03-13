@@ -50,7 +50,7 @@ pub fn total_cpu_usage() -> anyhow::Result<f64> {
     let idle_delta = idle2.saturating_sub(idle1) as f64;
 
     if total_delta <= 0.0 {
-        println!("Could not compute CPU usage (no change in counters).");//need to fix this can't return 0.0 
+        println!("Could not compute CPU usage (no change in counters)."); //need to fix this can't return 0.0 
         return Ok(0.0);
     } else {
         let usage_frac = 1.0 - (idle_delta / total_delta);
@@ -72,8 +72,6 @@ pub fn systeminfo() -> __SysInfo {
         cpu_vendor: sys.cpus()[0].brand().to_string(),
     }
 }
-
-
 
 pub fn memory_usage() -> anyhow::Result<__Memory> {
     let data = Meminfo::current()?;

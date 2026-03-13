@@ -1,14 +1,16 @@
-use super::response::AuthUser;
 use crate::objects::AppState;
+use sqlx::Row;
 use axum::{
     extract::State,
     http::{Request, StatusCode},
     middleware::Next,
     response::Response,
 };
-use sqlx::Row;
+// auth
 
-pub(super) async fn user_auth(
+
+
+pub(super) async fn agent_auth_middleware(
     State(db_state): State<AppState>,
     mut req: Request<axum::body::Body>,
     next: Next,
@@ -24,14 +26,14 @@ pub(super) async fn user_auth(
             Some(value) => {println!("cache hit done");  (true, value)},
             None => {
                 println!("No cache hit done");
-                let fetch_data = sqlx::query("SELECT user_id FROM auth_tokens where token=$1")
+                let fetch_data = sqlx::query("SELECT id FROM nodes where token=$1")
                     .persistent(true)
                     .bind(auth_str)
                     .fetch_optional(&db_state.db)
                     .await
                     .unwrap();
                 let out_put: (bool, i64) = match fetch_data {
-                    Some(value) => (true, value.get("user_id")),
+                    Some(value) => (true, value.get("id")),
                     None => (false, 0),
                 };
                 // setting the cache
@@ -44,7 +46,7 @@ pub(super) async fn user_auth(
         if !out_put.0 {
             return Err(StatusCode::UNAUTHORIZED);
         }
-        req.extensions_mut().insert(AuthUser { user_id: out_put.1 });
+        req.extensions_mut().insert(out_put.1);
         let response = next.run(req).await;
         return Ok(response);
     }

@@ -1,17 +1,16 @@
 use serde::Deserialize;
 
 #[derive(Deserialize)]
-pub (super) struct Login{
+pub(super) struct Login {
     pub username: String,
-    pub password: String
+    pub password: String,
 }
 
 #[derive(Deserialize)]
-pub (super) struct UsernamePasswordReset{
-    pub username:String,
-    pub password:String,
+pub(super) struct UsernamePasswordReset {
+    pub username: String,
+    pub password: String,
 }
-
 
 #[derive(Deserialize)]
 pub(super) struct IdQuery {
@@ -25,3 +24,7 @@ pub(super) struct ServiceQuery {
     pub service_name: String,
 }
 
+#[derive(Deserialize)]
+pub (super) struct CreateNode{
+    pub name:String
+}

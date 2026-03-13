@@ -60,5 +60,5 @@ pub struct __SysInfo {
     pub os_version: Option<String>,
     pub uptime: u64,
     pub cpu_threads: usize,
-    pub cpu_vendor:String,
+    pub cpu_vendor: String,
 }

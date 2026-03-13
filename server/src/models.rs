@@ -1,7 +1,7 @@
 // table create code
+use crate::user_views::hash_password;
 use sqlx::PgPool;
 use std::env;
-use crate::user_views::hash_password;
 
 pub async fn create_tables(pg_pool: &PgPool) -> Result<(), sqlx::Error> {
     // creating tables
@@ -11,7 +11,7 @@ pub async fn create_tables(pg_pool: &PgPool) -> Result<(), sqlx::Error> {
         "
         CREATE TABLE IF NOT EXISTS nodes (
             id BIGSERIAL PRIMARY KEY,
-            name VARCHAR(100) NOT NULL,
+            name VARCHAR(100) NOT NULL UNIQUE,
             created_time TIMESTAMPTZ NOT NULL DEFAULT NOW(),
             token VARCHAR(100) NOT NULL UNIQUE
         );
@@ -93,7 +93,7 @@ pub async fn create_tables(pg_pool: &PgPool) -> Result<(), sqlx::Error> {
     .execute(&mut *tx)
     .await?;
     // // Token Auth table
-       sqlx::query(
+    sqlx::query(
         "
         CREATE TABLE IF NOT EXISTS auth_tokens (
     id BIGSERIAL PRIMARY KEY,
@@ -111,10 +111,9 @@ pub async fn create_tables(pg_pool: &PgPool) -> Result<(), sqlx::Error> {
     )
     .execute(&mut *tx)
     .await?;
-    
 
     // systeminfo
-     sqlx::query(
+    sqlx::query(
         "
     CREATE TABLE IF NOT EXISTS sysinfo (
     id BIGSERIAL PRIMARY KEY,
@@ -133,24 +132,16 @@ pub async fn create_tables(pg_pool: &PgPool) -> Result<(), sqlx::Error> {
     ",
     )
     .execute(&mut *tx)
-    .await?;    
+    .await?;
     tx.commit().await?;
     Ok(())
 }
 
-pub async  fn create_user_if_not_exist(pg_pool: &PgPool)-> Result<(), sqlx::Error> {
+pub async fn create_user_if_not_exist(pg_pool: &PgPool) -> Result<(), sqlx::Error> {
     let mut tx = pg_pool.begin().await?;
 
-    let user_name=env::var("Username").unwrap_or_else(
-        |_|{
-            "admin".to_string()
-        }
-    );
-    let password=env::var("Password").unwrap_or_else(
-        |_|{
-            "admin".to_string()
-        }
-    );
+    let user_name = env::var("Username").unwrap_or_else(|_| "admin".to_string());
+    let password = env::var("Password").unwrap_or_else(|_| "admin".to_string());
 
     sqlx::query(
         "
@@ -161,8 +152,7 @@ pub async  fn create_user_if_not_exist(pg_pool: &PgPool)-> Result<(), sqlx::Erro
     .bind(user_name)
     .bind(hash_password(&password))
     .execute(&mut *tx)
-    .await?;    
+    .await?;
     tx.commit().await?;
     Ok(())
-
 }

@@ -1,20 +1,19 @@
 use chrono::{DateTime, Utc};
 use serde::Serialize;
 
-
-#[derive(Clone,Serialize)]
+#[derive(Clone, Serialize)]
 pub(super) struct AuthUser {
-    pub user_id: i64
+    pub user_id: i64,
 }
 
-#[derive(Clone,Serialize)]
+#[derive(Clone, Serialize)]
 pub(super) struct AuthuserIdPassword {
     pub user_id: i64,
-    pub username:String
+    pub username: String,
 }
 
 #[derive(Serialize)]
-pub (super) struct UserToken{
+pub(super) struct AuthToken {
     pub token: String,
 }
 
@@ -24,7 +23,7 @@ pub(super) struct NodesList {
     name: String,
 }
 
-#[derive(sqlx::FromRow,Debug,Serialize)]
+#[derive(sqlx::FromRow, Debug, Serialize)]
 // same strcut being used in user view for res and db query
 pub(super) struct SysInfo {
     pub system_name: String,
@@ -32,18 +31,16 @@ pub(super) struct SysInfo {
     pub os_version: String,
     pub uptime: i64,
     pub cpu_threads: i16,
-    pub cpu_vendor:String,
+    pub cpu_vendor: String,
 }
 
-
-
-#[derive(sqlx::FromRow, Debug, Serialize,Clone)]
+#[derive(sqlx::FromRow, Debug, Serialize, Clone)]
 pub struct LatestCpu {
     pub value: f64,
     pub date_time: DateTime<Utc>,
 }
 
-#[derive(sqlx::FromRow, Debug, Serialize,Clone)]
+#[derive(sqlx::FromRow, Debug, Serialize, Clone)]
 pub struct LatestRam {
     pub free: String,
     pub total: String,
@@ -64,7 +61,7 @@ pub(super) struct SingleServiceStatus {
 
 #[derive(Debug, Serialize, sqlx::FromRow)]
 pub(super) struct ServiceStatus {
-    pub service_name:String,
+    pub service_name: String,
     pub error_msg: String,
     pub status: String,
     pub service_status: String,

@@ -1,4 +1,4 @@
-mod auth;
+mod middleware;
 mod objects;
 mod urls;
 mod views;

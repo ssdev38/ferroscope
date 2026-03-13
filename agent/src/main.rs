@@ -1,81 +1,84 @@
-use tokio::{time::{Duration, interval}};
+use tokio::time::{Duration, interval};
 mod system;
-use std::{collections::HashMap};
 use system::logic;
 mod jobs;
-use reqwest::{Client,header};
+use reqwest::{Client, header};
 use std::sync::Arc;
-use std::env;
-use std::sync::LazyLock;
-static BASEAPI:LazyLock<String>=LazyLock::new(||env::var("BASEAPI").unwrap_or("http://localhost:8000".to_string()));
+mod set_up;
 
 #[tokio::main]
 async fn main() {
-    let mut __headers=header::HeaderMap::new();
-    __headers.insert(header::AUTHORIZATION, header::HeaderValue::from_str(
-        env::var("AUTH").unwrap().as_str()
-    ).expect("something went wrong in Header"));
-    let api_client=Arc::new(
-        Client::builder().default_headers(__headers).timeout(std::time::Duration::from_secs(5)).build().expect("errr")
+    // set-up
+    let conf = {
+        let service_setup = set_up::ConfSetUp::new();
+        service_setup.set_up().await;
+        println!("runing next");
+        Arc::new(service_setup.get_config().unwrap())
+    };
+
+    let mut __headers = header::HeaderMap::new();
+    __headers.insert(
+        header::AUTHORIZATION,
+        header::HeaderValue::from_str(conf.get_auth_token())
+            .expect("something went wrong in Header"),
+    );
+    let api_client = Arc::new(
+        Client::builder()
+            .default_headers(__headers)
+            .timeout(std::time::Duration::from_secs(conf.get_api_time_out()))
+            .build()
+            .expect("errr"),
     );
     // sening the systeminfo first
     {
-    let sys=logic::systeminfo();
-    let send_data=format!("{}/send_systeminfo",*BASEAPI);
-    let _=api_client.post(send_data)
-    .json(&sys)
-    .send().await.unwrap();
-    // println!("{:?}",a);
+        let sys = logic::systeminfo();
+        // let conf1=Arc::clone(&conf);
+        let send_data = format!("{}/send_systeminfo", conf.get_server_url());
+        let _ = api_client.post(send_data).json(&sys).send().await.unwrap();
+        // println!("{:?}",a);
     }
 
-    let jobs_api=Arc::clone(&api_client);
+    {
+        let jobs_api: Arc<Client> = Arc::clone(&api_client);
+        let conf1 = Arc::clone(&conf);
+        tokio::spawn(async move { jobs::executor::run(jobs_api, conf1).await });
+    }
+    // cpu
+    {
+    let system_conf: Arc<set_up::BaseConFig>=conf.clone();
+    let system_api_client: Arc<Client>=api_client.clone();
     tokio::spawn(async move {
-        jobs::executor::run(jobs_api).await  
+        let mut tick=interval(Duration::from_secs(system_conf.get_cpu_interval()));
+        loop{
+            system::send_cpu(system_conf.clone(),system_api_client.clone()).await;
+            println!("cpu send");
+            tick.tick().await;
+        }
     });
-    
-    let mut ticker=interval(Duration::from_secs(60));
-    loop {
-    // sening cpu usage
-    {
-    let send_data=format!("{}/send_cpu",*BASEAPI);
-    let  cpu_usage: HashMap<&str, f64>=HashMap::from([
-        ("cpu",(logic::total_cpu_usage().unwrap() * 100.0).round())
-    ]);
-    let _= api_client.post(send_data)
-    .json(&cpu_usage)
-    .send().await.unwrap();
-    // println!("{:?}",a);
     }
+    // Ram
+    {let system_conf: Arc<set_up::BaseConFig>=conf.clone();
+    let system_api_client: Arc<Client>=api_client.clone();
+    tokio::spawn(async move {
+        let mut tick=interval(Duration::from_secs(system_conf.get_ram_interval()));
+        loop{
+            system::send_memory(system_conf.clone(),system_api_client.clone()).await;
+            tick.tick().await;
+        }
+    });}
     // uptime
-    {
-    let  uptime: HashMap<&str, u64>=HashMap::from([
-        ("uptime_sec",logic::get_uptime().unwrap())
-    ]);
-    let send_data=format!("{}/send_uptime",*BASEAPI);
-
-     reqwest::Client::new() 
-    .post(send_data)
-    .form(&uptime)
-    .send()
-    .await.unwrap();    
+    let system_conf: Arc<set_up::BaseConFig>=conf.clone();
+    let system_api_client: Arc<Client>=api_client.clone();
+    
+    let mut tick=interval(Duration::from_secs(system_conf.get_uptime_interval()));
+    loop{
+        system::send_uptime(system_conf.clone(),system_api_client.clone()).await;
+        tick.tick().await;
     }
+    
 
-    // send memory
-    {
-    let send_data=format!("{}/send_memory",*BASEAPI);
-    let memory=logic::memory_usage().unwrap();
-    memory.get_total();
-    let  data: HashMap<&str, &str>=HashMap::from([
-        ("free",memory.get_free()),
-        ("total",memory.get_total()),
-    ]);
-    let _= api_client.post(send_data)
-    .json(&data)
-    .send().await.unwrap(); 
-    // println!("Memory Priented {:?}",memory);
-            // println!("{:?}",a);
-    }
-    ticker.tick().await;
+
 }
 
-}
+
+

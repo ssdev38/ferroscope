@@ -1,4 +1,4 @@
+mod config_parse;
 mod config_reader;
-mod  config_parse;
-mod  structures;
-pub  mod executor;
+pub mod executor;
+mod structures;
