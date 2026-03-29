@@ -3,7 +3,16 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Card, CardContent } from "@/components/ui/card";
-import { Activity, Cpu, HardDrive, Server, Plus, Copy, Check, X } from "lucide-react";
+import {
+  Activity,
+  Cpu,
+  HardDrive,
+  Server,
+  Plus,
+  Copy,
+  Check,
+  X,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { api } from "@/lib/api";
@@ -14,11 +23,17 @@ interface StatsDisplayProps {
   totalRAM: { used: number; total: number };
 }
 
-export function StatsDisplay({ totalNodes, averageCPU, totalRAM }: StatsDisplayProps) {
+export function StatsDisplay({
+  totalNodes,
+  averageCPU,
+  totalRAM,
+}: StatsDisplayProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [nodeName, setNodeName] = useState("");
   const [token, setToken] = useState("");
-  const [isCopied, setIsCopied] = useState(false);
+  const [backendUrl, setBackendUrl] = useState("");
+  const [copiedToken, setCopiedToken] = useState(false);
+  const [copiedUrl, setCopiedUrl] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
   const handleCreateNode = async () => {
@@ -28,6 +43,8 @@ export function StatsDisplay({ totalNodes, averageCPU, totalRAM }: StatsDisplayP
       const res = await api.createNode(nodeName);
       if (res && res.token) {
         setToken(res.token);
+        const url = process.env.NEXT_PUBLIC_BASE_URL || "";
+        setBackendUrl(url);
       }
     } catch (error) {
       console.error("Failed to create node:", error);
@@ -36,17 +53,36 @@ export function StatsDisplay({ totalNodes, averageCPU, totalRAM }: StatsDisplayP
     }
   };
 
-  const handleCopy = () => {
-    navigator.clipboard.writeText(token);
-    setIsCopied(true);
-    setTimeout(() => setIsCopied(false), 2000);
+  const handleCopy = async (text: string, setCopied: (v: boolean) => void) => {
+    console.log("Copying:", JSON.stringify(text));
+    if (!text) return;
+    try {
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(text);
+      } else {
+        const textarea = document.createElement("textarea");
+        textarea.value = text;
+        textarea.style.position = "fixed";
+        textarea.style.opacity = "0";
+        document.body.appendChild(textarea);
+        textarea.focus();
+        textarea.select();
+        document.execCommand("copy");
+        document.body.removeChild(textarea);
+      }
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error("Copy failed:", err);
+    }
   };
 
   const resetModal = () => {
     setIsModalOpen(false);
     setNodeName("");
     setToken("");
-    setIsCopied(false);
+    setCopiedToken(false);
+    setCopiedUrl(false);
   };
 
   const stats = [
@@ -83,7 +119,10 @@ export function StatsDisplay({ totalNodes, averageCPU, totalRAM }: StatsDisplayP
   return (
     <>
       <div className="flex justify-end mb-4">
-        <Button onClick={() => setIsModalOpen(true)} className="flex items-center gap-2">
+        <Button
+          onClick={() => setIsModalOpen(true)}
+          className="flex items-center gap-2"
+        >
           <Plus className="h-4 w-4" />
           Create Node
         </Button>
@@ -117,11 +156,16 @@ export function StatsDisplay({ totalNodes, averageCPU, totalRAM }: StatsDisplayP
                   {!token ? (
                     <div className="space-y-4">
                       <div>
-                        <label className="text-sm font-medium mb-1 block">Node Name</label>
+                        <label className="text-sm font-medium mb-1 block">
+                          Node Name
+                        </label>
                         <Input
                           placeholder="Enter node name"
                           value={nodeName}
                           onChange={(e) => setNodeName(e.target.value)}
+                          onKeyDown={(e) =>
+                            e.key === "Enter" && handleCreateNode()
+                          }
                         />
                       </div>
                       <Button
@@ -134,17 +178,46 @@ export function StatsDisplay({ totalNodes, averageCPU, totalRAM }: StatsDisplayP
                     </div>
                   ) : (
                     <div className="space-y-4 animate-in fade-in">
+                      {/* TOKEN */}
                       <div className="p-4 bg-muted rounded-md break-all relative">
+                        <p className="text-xs text-muted-foreground mb-1">
+                          Token
+                        </p>
                         <p className="text-sm font-mono pr-10">{token}</p>
                         <Button
                           variant="ghost"
                           size="icon"
                           className="absolute top-2 right-2 h-8 w-8"
-                          onClick={handleCopy}
+                          onClick={() => handleCopy(token, setCopiedToken)}
                         >
-                          {isCopied ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
+                          {copiedToken ? (
+                            <Check className="h-4 w-4 text-green-500" />
+                          ) : (
+                            <Copy className="h-4 w-4" />
+                          )}
                         </Button>
                       </div>
+
+                      {/* BACKEND URL */}
+                      <div className="p-4 bg-muted rounded-md break-all relative">
+                        <p className="text-xs text-muted-foreground mb-1">
+                          Backend URL
+                        </p>
+                        <p className="text-sm font-mono pr-10">{backendUrl}</p>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="absolute top-2 right-2 h-8 w-8"
+                          onClick={() => handleCopy(backendUrl, setCopiedUrl)}
+                        >
+                          {copiedUrl ? (
+                            <Check className="h-4 w-4 text-green-500" />
+                          ) : (
+                            <Copy className="h-4 w-4" />
+                          )}
+                        </Button>
+                      </div>
+
                       <Button className="w-full" onClick={resetModal}>
                         Close
                       </Button>
