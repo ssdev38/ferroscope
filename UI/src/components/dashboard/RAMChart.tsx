@@ -77,7 +77,7 @@ export function RAMChart({ nodeId, nodeName }: RAMChartProps) {
     };
   }, [fetchHistory, nodeId]);
 
-  // ✅ spread first to avoid mutating state array
+  //  spread first to avoid mutating state array
   const chartData = [...data].reverse().map((item) => ({
     timestamp: item.timestamp,
     time: formatTimestamp(item.timestamp),
@@ -87,7 +87,7 @@ export function RAMChart({ nodeId, nodeName }: RAMChartProps) {
 
   console.log("chartData:", chartData);
 
-  // ✅ guard against empty array — Math.max(...[]) = -Infinity
+  //  guard against empty array — Math.max(...[]) = -Infinity
   const maxTotal =
     chartData.length > 0 ? Math.max(...chartData.map((d) => d.total), 0) : 16;
 
@@ -123,7 +123,7 @@ export function RAMChart({ nodeId, nodeName }: RAMChartProps) {
               </div>
             </div>
           ) : chartData.length === 0 ? (
-            // ✅ handle empty state
+            //  handle empty state
             <div className="h-[300px] flex items-center justify-center">
               <div className="text-muted-foreground text-sm">
                 No RAM data available

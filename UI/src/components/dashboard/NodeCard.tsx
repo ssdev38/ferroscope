@@ -49,8 +49,8 @@ export function NodeCard({ node, index, onDelete }: NodeCardProps) {
       console.error("Error fetching node data:", error);
 
       setIsOffline(true);
-      setCpuData(null); // ✅ ADD THIS
-      setRamData(null); // ✅ ADD THIS
+      setCpuData(null); 
+      setRamData(null); 
     } finally {
       setIsRefreshing(false);
       setLoading(false);
@@ -84,7 +84,7 @@ export function NodeCard({ node, index, onDelete }: NodeCardProps) {
 
     cpuEventSource.onerror = () => {
       setIsOffline(true);
-      setCpuData(null); // ✅ ADD THIS
+      setCpuData(null); 
     };
 
     // Connect to SSE for real-time RAM updates
@@ -107,7 +107,7 @@ export function NodeCard({ node, index, onDelete }: NodeCardProps) {
 
     ramEventSource.onerror = () => {
       setIsOffline(true);
-      setRamData(null); // ✅ ADD THIS
+      setRamData(null); 
     };
 
     return () => {

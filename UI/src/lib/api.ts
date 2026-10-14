@@ -1,3 +1,4 @@
+
 import type {
   Node,
   CPUData,
@@ -33,6 +34,7 @@ const getBaseUrl = () => {
 const getApiUrl = () => `${getBaseUrl()}/view`;
 const getAuthUrl = () => `${getBaseUrl()}/auth`;
 const getWriteUrl = () => `${getBaseUrl()}/write`;
+const getStreamUrl = () => `${getBaseUrl()}/stream`;
 const getAccessControlUrl = () => `${getBaseUrl()}/access-control`;
 
 const getHeaders = () => {
@@ -241,6 +243,7 @@ export const api = {
   },
 
   getCPUStreamUrl(nodeId: number): string {
+<<<<<<< Updated upstream
     const token =
     typeof window !== "undefined" ? localStorage.getItem("ferro_token") : "";
     const streamBase = getApiUrl()?.replace("/view", "/stream") || "";
@@ -259,6 +262,17 @@ export const api = {
     typeof window !== "undefined" ? localStorage.getItem("ferro_token") : "";
     const streamBase = getApiUrl()?.replace("/view", "/stream") || "";
     return `${streamBase}/disk?node=${nodeId}&token=${token}`;
+=======
+    return `${getStreamUrl()}/cpu?node=${nodeId}`;
+  },
+
+  getRAMStreamUrl(nodeId: number): string {
+    return `${getStreamUrl()}/ram?node=${nodeId}`;
+  },
+
+  getDiskStreamUrl(nodeId: number): string {
+    return `${getStreamUrl()}/disk?node=${nodeId}`;
+>>>>>>> Stashed changes
   },
 
   async createNode(name: string): Promise<{ token: string } | null> {
@@ -373,14 +387,11 @@ export const api = {
   },
 
   async getNodesWithServices(nodeIds: number[]): Promise<NodeWithServices[]> {
-    const response = await fetch(
-      `${getApiUrl()}/nodes_with_services`,
-      {
-        method: "POST",
-        headers: getHeaders(),
-        body: JSON.stringify({ obj_ids: nodeIds }),
-      },
-    );
+    const response = await fetch(`${getApiUrl()}/nodes_with_services`, {
+      method: "POST",
+      headers: getHeaders(),
+      body: JSON.stringify({ obj_ids: nodeIds }),
+    });
     const result = await handleResponse<{ data: NodeWithServices[] }>(
       response,
       {

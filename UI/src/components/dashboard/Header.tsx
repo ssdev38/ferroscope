@@ -90,11 +90,10 @@ export function Header({ onRefresh, isLoading = false }: HeaderProps) {
                 <Button
                   variant={isUsersPage ? "default" : "outline"}
                   size="sm"
-                  className={`gap-2 ${
-                    isUsersPage
+                  className={`gap-2 ${isUsersPage
                       ? "bg-gradient-to-r from-primary to-blue-600 text-white font-medium shadow-md shadow-primary/20"
                       : "hover:border-primary/50 hover:bg-primary/5"
-                  }`}
+                    }`}
                 >
                   <Users className="h-4 w-4" />
                   <span>Users</span>

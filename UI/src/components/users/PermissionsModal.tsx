@@ -42,7 +42,6 @@ interface PermissionForm {
 }
 
 // Permission categories shown in the compact admin view.
-// Adjust this list if your app tracks other permission types.
 const ADMIN_PERMISSION_LABELS = [
   "All Nodes",
   "RAM Metrics",

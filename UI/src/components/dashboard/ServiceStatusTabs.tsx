@@ -1,7 +1,6 @@
 "use client";
 
 import { ServiceStatusGrouped, ServiceStatus } from "@/types";
-import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CheckCircle2, XCircle, ShieldAlert } from "lucide-react";

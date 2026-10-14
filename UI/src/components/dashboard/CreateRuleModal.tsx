@@ -244,7 +244,6 @@ export function CreateRuleModal({
                           }
                         >
                           {/* <option value="CPU">CPU Usage</option> */}
-                          {/* <option value="RAM">RAM Usage</option> */}
                           <option value="SERVICE">Service Status</option>
                           <option value="NODE">Node Status</option>
                         </select>

@@ -556,7 +556,6 @@ export default function UsersPage() {
         onSuccess={fetchUsers}
       />
 
-      {/* Delete User Confirmation Modal */}
       <DeleteUserModal
         isOpen={!!deletingUser}
         user={deletingUser}
